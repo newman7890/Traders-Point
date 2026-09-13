@@ -344,6 +344,22 @@ const handler = async (req: Request): Promise<Response> => {
         console.error("Error invoking order notification:", notifErr);
       }
 
+      // Send rider push notification
+      try {
+        await supabase.functions.invoke("send-rider-push", {
+          body: {
+            orderId: dbOrder.id,
+            trackingCode: dbOrder.tracking_code,
+            title: "New Delivery Available! 🚴🔔",
+            body: "A new paid order is ready for delivery pickup.",
+            type: "new_order",
+          },
+          headers: { Authorization: `Bearer ${SERVICE_ROLE_KEY}` },
+        });
+      } catch (pushErr) {
+        console.warn("Rider push dispatch notice:", pushErr);
+      }
+
       return new Response(
         JSON.stringify({
           success: true,
@@ -453,6 +469,22 @@ const handler = async (req: Request): Promise<Response> => {
         });
       } catch (notifErr) {
         console.error("Error sending order confirmation notification:", notifErr);
+      }
+
+      // Send rider push notification
+      try {
+        await supabase.functions.invoke("send-rider-push", {
+          body: {
+            orderId: newOrder.id,
+            trackingCode: newOrder.tracking_code,
+            title: "New Delivery Available! 🚴🔔",
+            body: "A new paid order is ready for delivery pickup.",
+            type: "new_order",
+          },
+          headers: { Authorization: `Bearer ${SERVICE_ROLE_KEY}` },
+        });
+      } catch (pushErr) {
+        console.warn("Rider push dispatch notice:", pushErr);
       }
 
       return new Response(

@@ -114,10 +114,10 @@ const handler = async (req: Request): Promise<Response> => {
       throw new Error("Order not found");
     }
 
-    // Fetch order items with product details
+    // Fetch order items with product details (including seller_id)
     const { data: rawOrderItems } = await supabase
       .from("order_items")
-      .select("*, products(name, image)")
+      .select("*, products(name, image, seller_id)")
       .eq("order_id", orderId);
 
     const orderItems = rawOrderItems || [];
@@ -409,6 +409,187 @@ const handler = async (req: Request): Promise<Response> => {
       html: orderInfoHtml,
     });
     results.push({ type: "order_info", res: orderInfoRes });
+
+    // =========================================================================
+    // EMAIL 3: SELLER NOTIFICATION(S) (Sent on confirmed status)
+    // =========================================================================
+    if (orderStatus === "confirmed") {
+      try {
+        // Group items by seller_id
+        const itemsBySeller: Record<string, any[]> = {};
+        for (const item of orderItems) {
+          const sellerId = (item as any).products?.seller_id;
+          if (sellerId) {
+            if (!itemsBySeller[sellerId]) itemsBySeller[sellerId] = [];
+            itemsBySeller[sellerId].push(item);
+          }
+        }
+
+        const sellerIds = Object.keys(itemsBySeller);
+        console.log(`Identified ${sellerIds.length} unique seller(s) for order ${order.id}`);
+
+        for (const sellerId of sellerIds) {
+          // Fetch seller profile / auth details
+          const { data: sellerProf } = await supabase
+            .from("seller_profiles")
+            .select("business_name, email")
+            .eq("user_id", sellerId)
+            .maybeSingle();
+
+          const { data: userProf } = await supabase
+            .from("profiles")
+            .select("full_name, email")
+            .eq("id", sellerId)
+            .maybeSingle();
+
+          const sellerEmail = sellerProf?.email || userProf?.email;
+          const sellerBusinessName = sellerProf?.business_name || userProf?.full_name || "Merchant";
+
+          if (!sellerEmail) {
+            console.warn(`No email found for seller ${sellerId}, skipping seller email notification.`);
+            continue;
+          }
+
+          const sellerItems = itemsBySeller[sellerId];
+          let sellerItemsRows = "";
+          let sellerTotalGross = 0;
+
+          for (const sItem of sellerItems) {
+            const unitPrice = Number(sItem.price || 0);
+            const qty = Number(sItem.quantity || 1);
+            const lineTotal = unitPrice * qty;
+            sellerTotalGross += lineTotal;
+
+            const pName = (sItem as any).products?.name || "Product Item";
+            const pImage = (sItem as any).products?.image || null;
+            const vText = formatVariantText(sItem.selected_color, sItem.selected_size);
+
+            sellerItemsRows += `
+              <tr style="border-bottom: 1px solid #e2e8f0;">
+                <td style="padding: 12px 10px; font-size: 14px; color: #1e293b;">
+                  <table style="width: 100%; border-collapse: collapse;">
+                    <tr>
+                      ${pImage ? `
+                        <td style="width: 44px; padding-right: 10px; vertical-align: middle;">
+                          <img src="${escapeHtml(pImage)}" alt="${escapeHtml(pName)}" style="width: 40px; height: 40px; border-radius: 8px; object-fit: cover; border: 1px solid #cbd5e1;" />
+                        </td>
+                      ` : ""}
+                      <td style="vertical-align: middle;">
+                        <div style="font-weight: 700; color: #0f172a;">${escapeHtml(pName)}</div>
+                        ${vText ? `<div style="color: #64748b; font-size: 12px; margin-top: 2px;">${escapeHtml(vText)}</div>` : ""}
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+                <td style="padding: 12px 10px; font-size: 14px; color: #334155; text-align: center; font-weight: 600;">x${qty}</td>
+                <td style="padding: 12px 10px; font-size: 14px; color: #334155; text-align: right;">GH₵${unitPrice.toFixed(2)}</td>
+                <td style="padding: 12px 10px; font-size: 14px; font-weight: 700; color: #0f172a; text-align: right;">GH₵${lineTotal.toFixed(2)}</td>
+              </tr>
+            `;
+          }
+
+          const sellerHtml = `
+            <!DOCTYPE html>
+            <html>
+            <head>
+              <meta charset="utf-8">
+              <meta name="viewport" content="width=device-width, initial-scale=1.0">
+              <title>New Order Received - Trades Point</title>
+            </head>
+            <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; line-height: 1.6; color: #1e293b; background-color: #f1f5f9; margin: 0; padding: 24px 12px;">
+              <div style="max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 20px; overflow: hidden; box-shadow: 0 12px 30px rgba(0,0,0,0.08); border: 1px solid #cbd5e1;">
+                
+                <!-- Header Banner -->
+                <div style="background: linear-gradient(135deg, #059669 0%, #10b981 100%); padding: 32px 24px; text-align: center; color: white;">
+                  <table align="center" style="margin: 0 auto 14px auto; border-collapse: collapse; background: #ffffff; border-radius: 12px; box-shadow: 0 4px 14px rgba(0,0,0,0.15);">
+                    <tr>
+                      <td style="padding: 6px 14px; background: #ffffff; border-radius: 12px;">
+                        <img src="https://tradespoint.store/logo.png" alt="Trades Point Logo" style="height: 36px; width: auto; display: block; margin: 0 auto; border: 0;" />
+                      </td>
+                    </tr>
+                  </table>
+                  <h1 style="margin: 0; font-size: 22px; font-weight: 800;">🎉 NEW ORDER RECEIVED!</h1>
+                  <p style="margin: 4px 0 0 0; font-size: 14px; opacity: 0.95;">Order #${shortOrderId}</p>
+                </div>
+
+                <div style="padding: 28px 24px;">
+                  <p style="font-size: 16px; margin-bottom: 12px; color: #1e293b;">Hello <strong>${escapeHtml(sellerBusinessName)}</strong>,</p>
+                  <p style="font-size: 15px; color: #475569; margin-bottom: 22px;">
+                    Great news! A customer has just purchased item(s) from your store on <strong>Trades Point</strong>. Payment has been verified in full.
+                  </p>
+
+                  <!-- Ordered Items Table -->
+                  <h4 style="margin: 0 0 12px 0; font-size: 13px; text-transform: uppercase; letter-spacing: 1px; color: #047857; font-weight: 800;">Items Ordered from Your Store</h4>
+                  <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+                    <thead>
+                      <tr style="background: #f1f5f9; border-bottom: 2px solid #10b981; text-align: left; font-size: 12px; color: #475569; text-transform: uppercase; letter-spacing: 0.5px;">
+                        <th style="padding: 8px 10px;">Item</th>
+                        <th style="padding: 8px 10px; text-align: center;">Qty</th>
+                        <th style="padding: 8px 10px; text-align: right;">Unit</th>
+                        <th style="padding: 8px 10px; text-align: right;">Subtotal</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      ${sellerItemsRows}
+                    </tbody>
+                  </table>
+
+                  <!-- Seller Total Gross Card -->
+                  <div style="background: #f0fdf4; border-radius: 12px; padding: 16px 20px; border: 1.5px solid #10b981; margin-bottom: 24px;">
+                    <table style="width: 100%; border-collapse: collapse;">
+                      <tr>
+                        <td style="font-size: 14px; font-weight: 700; color: #065f46;">Gross Store Value:</td>
+                        <td style="font-size: 18px; font-weight: 900; color: #047857; text-align: right;">GH₵${sellerTotalGross.toFixed(2)}</td>
+                      </tr>
+                    </table>
+                  </div>
+
+                  <!-- Customer Delivery Destination -->
+                  <div style="background: #f8fafc; border-radius: 12px; padding: 18px; margin-bottom: 24px; border: 1px solid #e2e8f0;">
+                    <h4 style="margin: 0 0 8px 0; color: #475569; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Customer & Delivery Destination</h4>
+                    <p style="margin: 2px 0; font-size: 14px; font-weight: 700; color: #0f172a;">${escapeHtml(order.shipping_name)}</p>
+                    <p style="margin: 2px 0; font-size: 13px; color: #475569;">📍 ${escapeHtml(order.shipping_address)}, ${escapeHtml(order.shipping_city)}, ${escapeHtml(order.shipping_region)} ${order.shipping_town ? `(${escapeHtml(order.shipping_town)})` : ""}</p>
+                    <p style="margin: 2px 0; font-size: 13px; color: #475569;">📞 ${escapeHtml(order.shipping_phone)}</p>
+                  </div>
+
+                  <!-- Call to Action -->
+                  <div style="text-align: center; margin: 28px 0 16px 0;">
+                    <a href="${siteUrl}/seller-dashboard" style="display: inline-block; background: #10b981; color: white; text-decoration: none; padding: 14px 32px; border-radius: 30px; font-weight: 700; font-size: 15px; box-shadow: 0 4px 14px rgba(16,185,129,0.35);">
+                      Open Seller Dashboard 🚀
+                    </a>
+                  </div>
+                  <p style="text-align: center; color: #64748b; font-size: 12px; margin: 0;">
+                    Please prepare and package the items for pickup/dispatch.
+                  </p>
+                </div>
+
+                <!-- Footer -->
+                <div style="background: #f8fafc; border-top: 1px solid #e2e8f0; padding: 20px 24px; text-align: center; color: #64748b; font-size: 12px;">
+                  <p style="margin: 0 0 4px 0; font-weight: 700; color: #0f172a;">Trades Point Merchant Services</p>
+                  <p style="margin: 0;">Need support? Email us at <a href="mailto:info@tradespoint.store" style="color: #10b981; font-weight: 600;">info@tradespoint.store</a></p>
+                </div>
+              </div>
+            </body>
+            </html>
+          `;
+
+          console.log(`Sending Seller Order Alert email to ${sellerEmail}...`);
+          const sellerEmailRes = await resend.emails.send({
+            from: senderEmail,
+            to: [sellerEmail],
+            subject: `🎉 New Order Received! (#${shortOrderId}) - Trades Point`,
+            html: sellerHtml,
+          });
+          results.push({ type: "seller_order_alert", sellerId, sellerEmail, res: sellerEmailRes });
+          console.log(`Seller Order Alert sent successfully to ${sellerEmail}!`);
+
+          // Rate-limit buffer between multiple seller emails
+          await new Promise((resolve) => setTimeout(resolve, 500));
+        }
+      } catch (sellerErr: any) {
+        console.error("Error sending seller notification emails:", sellerErr);
+      }
+    }
 
     return new Response(JSON.stringify({ success: true, results }), {
       status: 200,

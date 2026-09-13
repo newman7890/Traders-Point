@@ -209,6 +209,21 @@ const handler = async (req: Request): Promise<Response> => {
             } catch (notifErr) {
               console.error("Error sending order notification from webhook:", notifErr);
             }
+
+            try {
+              await supabase.functions.invoke("send-rider-push", {
+                body: {
+                  orderId,
+                  trackingCode: dbOrder?.tracking_code,
+                  title: "New Delivery Available! 🚴🔔",
+                  body: "A new paid order is available for pickup and delivery.",
+                  type: "new_order",
+                },
+                headers: { Authorization: `Bearer ${supabaseServiceKey}` },
+              });
+            } catch (pushErr) {
+              console.warn("Rider push notification notice:", pushErr);
+            }
           }
         } else if (checkoutDetails && userId) {
           // 2. Direct checkout case: Verify amount against server-authoritative catalog prices, fees, and coupons
@@ -279,6 +294,21 @@ const handler = async (req: Request): Promise<Response> => {
               });
             } catch (notifErr) {
               console.error("Error sending order notification from webhook:", notifErr);
+            }
+
+            try {
+              await supabase.functions.invoke("send-rider-push", {
+                body: {
+                  orderId: newOrder.id,
+                  trackingCode: newOrder.tracking_code,
+                  title: "New Delivery Available! 🚴🔔",
+                  body: "A new paid order is available for pickup and delivery.",
+                  type: "new_order",
+                },
+                headers: { Authorization: `Bearer ${supabaseServiceKey}` },
+              });
+            } catch (pushErr) {
+              console.warn("Rider push notification notice:", pushErr);
             }
           }
         }

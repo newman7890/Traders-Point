@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'services/supabase_service.dart';
+import 'services/notification_service.dart';
 import 'theme/app_theme.dart';
 import 'screens/login_screen.dart';
 import 'screens/dashboard_screen.dart';
@@ -26,6 +27,9 @@ void main() async {
 
   // Initialize Supabase
   await SupabaseService.initialize();
+
+  // Initialize Background Push Notifications
+  await NotificationService.initializePushNotifications();
 
   runApp(const RiderApp());
 }

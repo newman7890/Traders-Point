@@ -499,4 +499,36 @@ class SupabaseService {
 
     return List<Map<String, dynamic>>.from(response);
   }
+
+  // Register / update device push token for background notifications
+  static Future<void> registerPushToken(String token, {Map<String, dynamic>? deviceInfo}) async {
+    final user = currentUser;
+    if (user == null || token.isEmpty) return;
+
+    try {
+      await client.from('rider_push_tokens').upsert({
+        'user_id': user.id,
+        'fcm_token': token,
+        'platform': 'android',
+        'device_info': deviceInfo ?? {},
+        'updated_at': DateTime.now().toIso8601String(),
+      }, onConflict: 'user_id,fcm_token');
+    } catch (e) {
+      // Non-blocking log
+    }
+  }
+
+  // Remove push token on logout
+  static Future<void> removePushToken(String token) async {
+    final user = currentUser;
+    if (user == null || token.isEmpty) return;
+
+    try {
+      await client
+          .from('rider_push_tokens')
+          .delete()
+          .eq('user_id', user.id)
+          .eq('fcm_token', token);
+    } catch (_) {}
+  }
 }
