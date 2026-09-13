@@ -544,12 +544,15 @@ const handler = async (req: Request): Promise<Response> => {
                     </table>
                   </div>
 
-                  <!-- Customer Delivery Destination -->
+                  <!-- Courier Pickup & Dispatch Instructions -->
                   <div style="background: #f8fafc; border-radius: 12px; padding: 18px; margin-bottom: 24px; border: 1px solid #e2e8f0;">
-                    <h4 style="margin: 0 0 8px 0; color: #475569; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Customer & Delivery Destination</h4>
-                    <p style="margin: 2px 0; font-size: 14px; font-weight: 700; color: #0f172a;">${escapeHtml(order.shipping_name)}</p>
-                    <p style="margin: 2px 0; font-size: 13px; color: #475569;">📍 ${escapeHtml(order.shipping_address)}, ${escapeHtml(order.shipping_city)}, ${escapeHtml(order.shipping_region)} ${order.shipping_town ? `(${escapeHtml(order.shipping_town)})` : ""}</p>
-                    <p style="margin: 2px 0; font-size: 13px; color: #475569;">📞 ${escapeHtml(order.shipping_phone)}</p>
+                    <h4 style="margin: 0 0 8px 0; color: #047857; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; font-weight: 800;">📦 Courier Pickup & Dispatch</h4>
+                    <p style="margin: 2px 0; font-size: 13px; color: #334155; line-height: 1.5;">
+                      Please package the items securely. A <strong>Trades Point Dispatch Rider</strong> has been assigned to pick up this parcel and handle delivery directly to the buyer.
+                    </p>
+                    <p style="margin: 8px 0 0 0; font-size: 12px; color: #64748b;">
+                      🔑 Remember to verify your <strong>4-digit Pickup Handover PIN</strong> with the rider upon handing over the parcel.
+                    </p>
                   </div>
 
                   <!-- Call to Action -->
