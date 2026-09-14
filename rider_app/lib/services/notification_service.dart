@@ -10,7 +10,54 @@ import 'supabase_service.dart';
 // Top-level background message handler for FCM
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  debugPrint('Handling a background push message: ${message.messageId}');
+  try {
+    await Firebase.initializeApp();
+    final localNotifications = FlutterLocalNotificationsPlugin();
+    const androidChannel = AndroidNotificationChannel(
+      'rider_delivery_channel',
+      'Rider Delivery Alerts',
+      description: 'Instant alerts for new available orders and assignments.',
+      importance: Importance.max,
+      playSound: true,
+      sound: RawResourceAndroidNotificationSound('notification'),
+    );
+
+    final androidPlugin = localNotifications
+        .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
+    await androidPlugin?.createNotificationChannel(androidChannel);
+
+    const initSettingsAndroid = AndroidInitializationSettings('@mipmap/ic_launcher');
+    const initSettings = InitializationSettings(android: initSettingsAndroid);
+    await localNotifications.initialize(initSettings);
+
+    final title = message.notification?.title ??
+        message.data['title'] ??
+        'New Delivery Available! 🚴🔔';
+    final body = message.notification?.body ??
+        message.data['body'] ??
+        'A new paid order is ready for delivery pickup.';
+
+    await localNotifications.show(
+      message.hashCode,
+      title,
+      body,
+      const NotificationDetails(
+        android: AndroidNotificationDetails(
+          'rider_delivery_channel',
+          'Rider Delivery Alerts',
+          channelDescription: 'Instant alerts for new available orders and assignments.',
+          importance: Importance.max,
+          priority: Priority.high,
+          playSound: true,
+          enableVibration: true,
+          icon: '@mipmap/ic_launcher',
+        ),
+      ),
+      payload: message.data['order_id'],
+    );
+  } catch (e) {
+    debugPrint('Error in background handler: $e');
+  }
 }
 
 class NotificationService {

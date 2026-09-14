@@ -165,20 +165,25 @@ const handler = async (req: Request): Promise<Response> => {
           message: {
             token: token,
             notification: {
-              title: title || "New Delivery Available! 🔔",
+              title: title || "New Delivery Available! 🚴🔔",
               body: body || "A new paid order is ready for delivery pickup.",
             },
             android: {
               priority: "HIGH",
+              ttl: "0s",
+              direct_boot_ok: true,
               notification: {
                 channel_id: "rider_delivery_channel",
                 sound: "notification",
                 default_vibrate_timings: true,
                 notification_priority: "PRIORITY_MAX",
+                visibility: "PUBLIC",
               },
             },
             data: {
               click_action: "FLUTTER_NOTIFICATION_CLICK",
+              title: title || "New Delivery Available! 🚴🔔",
+              body: body || "A new paid order is ready for delivery pickup.",
               order_id: orderId || "",
               tracking_code: trackingCode || "",
               type: type,
