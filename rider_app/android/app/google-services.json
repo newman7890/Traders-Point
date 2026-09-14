@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "328944211516",
+    "project_id": "trades-point-rider",
+    "storage_bucket": "trades-point-rider.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:328944211516:android:4c63b378b97551883b9539",
+        "android_client_info": {
+          "package_name": "com.example.rider_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAXqHCe8zeS_fzIgYTmto1pqr6xZffmLlw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
