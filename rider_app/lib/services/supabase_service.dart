@@ -503,7 +503,10 @@ class SupabaseService {
   // Register / update device push token for background notifications
   static Future<void> registerPushToken(String token, {Map<String, dynamic>? deviceInfo}) async {
     final user = currentUser;
-    if (user == null || token.isEmpty) return;
+    if (user == null || token.isEmpty) {
+      debugPrint('Cannot register push token: user is null or token is empty');
+      return;
+    }
 
     try {
       await client.from('rider_push_tokens').upsert({
@@ -513,8 +516,9 @@ class SupabaseService {
         'device_info': deviceInfo ?? {},
         'updated_at': DateTime.now().toIso8601String(),
       }, onConflict: 'user_id,fcm_token');
+      debugPrint('✅ Successfully registered rider push token for user: ${user.id}');
     } catch (e) {
-      // Non-blocking log
+      debugPrint('❌ Failed to register push token in Supabase: $e');
     }
   }
 
