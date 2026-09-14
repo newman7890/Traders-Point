@@ -4,6 +4,7 @@ import { crypto } from "https://deno.land/std@0.190.0/crypto/crypto.ts";
 import { getPaystackSecretKey } from "../_shared/paystack.ts";
 import { calculateAuthoritativeCheckoutTotal } from "../_shared/pricing.ts";
 import { getCorsHeaders } from "../_shared/cors.ts";
+import { sendRiderPush } from "../_shared/fcm.ts";
 
 interface PaystackEvent {
   event: string;
@@ -194,36 +195,28 @@ const handler = async (req: Request): Promise<Response> => {
               await decrementStock(supabase, orderItems);
             }
 
-            // Record seller earnings
+            // 🔔 PRIORITY: Send rider push notification FIRST (inline FCM, no edge function overhead)
             try {
-              await supabase.rpc("record_order_seller_earnings", { _order_id: orderId });
-            } catch (earnErr) {
-              console.warn("Seller earnings trigger notice:", earnErr);
-            }
-
-            try {
-              await supabase.functions.invoke("send-order-notification", {
-                body: { orderId, status: "confirmed" },
-                headers: { Authorization: `Bearer ${supabaseServiceKey}` },
-              });
-            } catch (notifErr) {
-              console.error("Error sending order notification from webhook:", notifErr);
-            }
-
-            try {
-              await supabase.functions.invoke("send-rider-push", {
-                body: {
-                  orderId,
-                  trackingCode: dbOrder?.tracking_code,
-                  title: "New Delivery Available! 🚴🔔",
-                  body: "A new paid order is available for pickup and delivery.",
-                  type: "new_order",
-                },
-                headers: { Authorization: `Bearer ${supabaseServiceKey}` },
+              await sendRiderPush({
+                orderId,
+                trackingCode: dbOrder?.tracking_code,
+                title: "New Delivery Available! 🚴🔔",
+                body: "A new paid order is available for pickup and delivery.",
+                type: "new_order",
               });
             } catch (pushErr) {
               console.warn("Rider push notification notice:", pushErr);
             }
+
+            // Fire-and-forget: earnings + email (not time-critical)
+            supabase.rpc("record_order_seller_earnings", { _order_id: orderId })
+              .then(() => console.log("Seller earnings recorded for order:", orderId))
+              .catch((e: any) => console.warn("Seller earnings notice:", e));
+
+            supabase.functions.invoke("send-order-notification", {
+              body: { orderId, status: "confirmed" },
+              headers: { Authorization: `Bearer ${supabaseServiceKey}` },
+            }).catch((e: any) => console.error("Order notification notice:", e));
           }
         } else if (checkoutDetails && userId) {
           // 2. Direct checkout case: Verify amount against server-authoritative catalog prices, fees, and coupons
@@ -281,35 +274,28 @@ const handler = async (req: Request): Promise<Response> => {
             await supabase.from("cart_items").delete().eq("user_id", userId);
             await decrementStock(supabase, pricing.items);
 
+            // 🔔 PRIORITY: Send rider push notification FIRST (inline FCM, no edge function overhead)
             try {
-              await supabase.rpc("record_order_seller_earnings", { _order_id: newOrder.id });
-            } catch (earnErr) {
-              console.warn("Seller earnings trigger notice:", earnErr);
-            }
-
-            try {
-              await supabase.functions.invoke("send-order-notification", {
-                body: { orderId: newOrder.id, status: "confirmed" },
-                headers: { Authorization: `Bearer ${supabaseServiceKey}` },
-              });
-            } catch (notifErr) {
-              console.error("Error sending order notification from webhook:", notifErr);
-            }
-
-            try {
-              await supabase.functions.invoke("send-rider-push", {
-                body: {
-                  orderId: newOrder.id,
-                  trackingCode: newOrder.tracking_code,
-                  title: "New Delivery Available! 🚴🔔",
-                  body: "A new paid order is available for pickup and delivery.",
-                  type: "new_order",
-                },
-                headers: { Authorization: `Bearer ${supabaseServiceKey}` },
+              await sendRiderPush({
+                orderId: newOrder.id,
+                trackingCode: newOrder.tracking_code,
+                title: "New Delivery Available! 🚴🔔",
+                body: "A new paid order is available for pickup and delivery.",
+                type: "new_order",
               });
             } catch (pushErr) {
               console.warn("Rider push notification notice:", pushErr);
             }
+
+            // Fire-and-forget: earnings + email (not time-critical)
+            supabase.rpc("record_order_seller_earnings", { _order_id: newOrder.id })
+              .then(() => console.log("Seller earnings recorded for order:", newOrder.id))
+              .catch((e: any) => console.warn("Seller earnings notice:", e));
+
+            supabase.functions.invoke("send-order-notification", {
+              body: { orderId: newOrder.id, status: "confirmed" },
+              headers: { Authorization: `Bearer ${supabaseServiceKey}` },
+            }).catch((e: any) => console.error("Order notification notice:", e));
           }
         }
         break;

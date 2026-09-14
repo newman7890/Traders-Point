@@ -6,6 +6,7 @@ import { getAllPaystackSecretKeysAsync } from "../_shared/paystack.ts";
 import { calculateAuthoritativeCheckoutTotal } from "../_shared/pricing.ts";
 import { getCorsHeaders } from "../_shared/cors.ts";
 import { checkGlobalRateLimitAsync, getClientIdentifier } from "../_shared/rateLimit.ts";
+import { sendRiderPush } from "../_shared/fcm.ts";
 
 const VerifySchema = z.object({
   reference: z
@@ -327,38 +328,28 @@ const handler = async (req: Request): Promise<Response> => {
         await decrementStock(supabase, orderItems);
       }
 
-      // Record seller earnings
+      // 🔔 PRIORITY: Send rider push notification FIRST (inline FCM, no edge function overhead)
       try {
-        await supabase.rpc("record_order_seller_earnings", { _order_id: dbOrder.id });
-      } catch (earnErr) {
-        console.warn("Seller earnings trigger notice:", earnErr);
-      }
-
-      // Send order notification
-      try {
-        await supabase.functions.invoke("send-order-notification", {
-          body: { orderId: dbOrder.id, status: "confirmed" },
-          headers: { Authorization: `Bearer ${SERVICE_ROLE_KEY}` },
-        });
-      } catch (notifErr) {
-        console.error("Error invoking order notification:", notifErr);
-      }
-
-      // Send rider push notification
-      try {
-        await supabase.functions.invoke("send-rider-push", {
-          body: {
-            orderId: dbOrder.id,
-            trackingCode: dbOrder.tracking_code,
-            title: "New Delivery Available! 🚴🔔",
-            body: "A new paid order is ready for delivery pickup.",
-            type: "new_order",
-          },
-          headers: { Authorization: `Bearer ${SERVICE_ROLE_KEY}` },
+        await sendRiderPush({
+          orderId: dbOrder.id,
+          trackingCode: dbOrder.tracking_code,
+          title: "New Delivery Available! 🚴🔔",
+          body: "A new paid order is ready for delivery pickup.",
+          type: "new_order",
         });
       } catch (pushErr) {
         console.warn("Rider push dispatch notice:", pushErr);
       }
+
+      // Fire-and-forget: earnings + email (not time-critical, don't block response)
+      supabase.rpc("record_order_seller_earnings", { _order_id: dbOrder.id })
+        .then(() => console.log("Seller earnings recorded for order:", dbOrder.id))
+        .catch((e: any) => console.warn("Seller earnings notice:", e));
+
+      supabase.functions.invoke("send-order-notification", {
+        body: { orderId: dbOrder.id, status: "confirmed" },
+        headers: { Authorization: `Bearer ${SERVICE_ROLE_KEY}` },
+      }).catch((e: any) => console.error("Order notification notice:", e));
 
       return new Response(
         JSON.stringify({
@@ -456,36 +447,28 @@ const handler = async (req: Request): Promise<Response> => {
         await decrementStock(supabase, pricing.items);
       }
 
+      // 🔔 PRIORITY: Send rider push notification FIRST (inline FCM, no edge function overhead)
       try {
-        await supabase.rpc("record_order_seller_earnings", { _order_id: newOrder.id });
-      } catch (earnErr) {
-        console.warn("Seller earnings trigger notice:", earnErr);
-      }
-
-      try {
-        await supabase.functions.invoke("send-order-notification", {
-          body: { orderId: newOrder.id, status: "confirmed" },
-          headers: { Authorization: `Bearer ${SERVICE_ROLE_KEY}` },
-        });
-      } catch (notifErr) {
-        console.error("Error sending order confirmation notification:", notifErr);
-      }
-
-      // Send rider push notification
-      try {
-        await supabase.functions.invoke("send-rider-push", {
-          body: {
-            orderId: newOrder.id,
-            trackingCode: newOrder.tracking_code,
-            title: "New Delivery Available! 🚴🔔",
-            body: "A new paid order is ready for delivery pickup.",
-            type: "new_order",
-          },
-          headers: { Authorization: `Bearer ${SERVICE_ROLE_KEY}` },
+        await sendRiderPush({
+          orderId: newOrder.id,
+          trackingCode: newOrder.tracking_code,
+          title: "New Delivery Available! 🚴🔔",
+          body: "A new paid order is ready for delivery pickup.",
+          type: "new_order",
         });
       } catch (pushErr) {
         console.warn("Rider push dispatch notice:", pushErr);
       }
+
+      // Fire-and-forget: earnings + email (not time-critical, don't block response)
+      supabase.rpc("record_order_seller_earnings", { _order_id: newOrder.id })
+        .then(() => console.log("Seller earnings recorded for order:", newOrder.id))
+        .catch((e: any) => console.warn("Seller earnings notice:", e));
+
+      supabase.functions.invoke("send-order-notification", {
+        body: { orderId: newOrder.id, status: "confirmed" },
+        headers: { Authorization: `Bearer ${SERVICE_ROLE_KEY}` },
+      }).catch((e: any) => console.error("Order notification notice:", e));
 
       return new Response(
         JSON.stringify({
