@@ -182,10 +182,39 @@ class NotificationService {
     if (newOrders.isNotEmpty) {
       _knownOrderIds.addAll(newOrders.map((o) => o['id'] as String));
 
-      // Play audio alert chime
+      // 1. Play audio alert chime
       await playChime();
 
-      // Show top alert notification banner on rider's phone
+      // 2. Trigger native Android system tray & lockscreen notification
+      final order = newOrders.first;
+      final trackingCode = order['tracking_code'] as String? ??
+          (order['id'] as String? ?? '').substring(0, 8).toUpperCase();
+      final city = order['shipping_city'] as String? ?? 'Accra';
+      final amount = (order['total_amount'] as num?)?.toStringAsFixed(2) ?? '0.00';
+
+      try {
+        _localNotifications.show(
+          order['id'].hashCode,
+          'New Delivery Available! 🚴🔔',
+          'Order #$trackingCode · $city · GH₵ $amount',
+          const NotificationDetails(
+            android: AndroidNotificationDetails(
+              'rider_delivery_channel',
+              'Rider Delivery Alerts',
+              channelDescription: 'Instant alerts for new available orders and assignments.',
+              importance: Importance.max,
+              priority: Priority.high,
+              playSound: true,
+              icon: '@mipmap/ic_launcher',
+            ),
+          ),
+          payload: order['id'],
+        );
+      } catch (e) {
+        debugPrint('Error showing local notification: $e');
+      }
+
+      // 3. Show rich dialog if rider is inside the app
       if (context.mounted) {
         showNewDeliveryDialog(context, newOrders.first);
       }
