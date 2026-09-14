@@ -38,6 +38,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     super.initState();
     _fetchProfile();
     _fetchOrders();
+    NotificationService.syncPushToken();
 
     final user = SupabaseService.currentUser;
     if (user != null) {

@@ -81,6 +81,13 @@ class NotificationService {
         await SupabaseService.registerPushToken(newToken);
       });
 
+      // Auto-sync token whenever rider logs in or session refreshes
+      SupabaseService.authStateChanges.listen((data) {
+        if (data.session != null) {
+          syncPushToken();
+        }
+      });
+
       // 6. Handle foreground messages
       FirebaseMessaging.onMessage.listen((RemoteMessage message) {
         debugPrint('Got a message whilst in the foreground!');
@@ -110,6 +117,19 @@ class NotificationService {
       _pushInitialized = true;
     } catch (e) {
       debugPrint('Notice: Push notification service setup skipped or pending configuration: $e');
+    }
+  }
+
+  // Explicitly sync current FCM push token to Supabase for the logged in rider
+  static Future<void> syncPushToken() async {
+    try {
+      final token = await FirebaseMessaging.instance.getToken();
+      if (token != null && token.isNotEmpty) {
+        debugPrint('Syncing FCM token for rider: $token');
+        await SupabaseService.registerPushToken(token);
+      }
+    } catch (e) {
+      debugPrint('Error syncing FCM token: $e');
     }
   }
 
