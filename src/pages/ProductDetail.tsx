@@ -95,6 +95,33 @@ const ProductDetail = () => {
     window.scrollTo(0, 0);
   }, [id, urlImage, urlColor]);
 
+  // Live Realtime sync: update product stock live when others purchase
+  useEffect(() => {
+    if (!id) return;
+
+    const channel = supabase
+      .channel(`product-detail-realtime-${id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "products",
+          filter: `id=eq.${id}`,
+        },
+        (payload) => {
+          if (payload.new) {
+            setProduct((prev: any) => (prev ? { ...prev, ...payload.new } : payload.new));
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [id]);
+
   const fetchProduct = async () => {
     try {
       setLoading(true);

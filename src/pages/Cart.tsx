@@ -1,7 +1,7 @@
 import { Header } from "@/components/Header";
 import { BottomNav } from "@/components/BottomNav";
 import { motion } from "framer-motion";
-import { ShoppingBag, Plus, Minus, X, ArrowRight } from "lucide-react";
+import { ShoppingBag, Plus, Minus, X, ArrowRight, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { useCart, getCartItemImage } from "@/hooks/useCart";
@@ -85,7 +85,9 @@ const Cart = () => {
                   const unitPrice = getItemUnitPrice(item);
                   const isDiscounted = unitPrice < (item.products?.price || 0);
                   const availableStock = getItemAvailableStock(item);
-                  const isMaxStockReached = item.quantity >= availableStock;
+                  const isOutOfStock = availableStock <= 0;
+                  const isOverStock = item.quantity > availableStock && availableStock > 0;
+                  const isMaxStockReached = item.quantity >= availableStock || isOutOfStock;
 
                   return (
                     <motion.div
@@ -106,13 +108,17 @@ const Cart = () => {
                             />
                           </div>
                           <div>
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2 flex-wrap">
                               <h3 className="font-semibold text-base group-hover:underline">{item.products.name}</h3>
-                              {isDiscounted && (
+                              {isOutOfStock ? (
+                                <span className="inline-flex items-center text-[10px] font-bold px-2 py-0.5 rounded-full bg-destructive/10 text-destructive border border-destructive/20">
+                                  Out of Stock
+                                </span>
+                              ) : isDiscounted ? (
                                 <span className="inline-flex items-center text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-900">
                                   ⚡ Flash Deal
                                 </span>
-                              )}
+                              ) : null}
                             </div>
                             <p className="text-sm text-muted-foreground mt-1">{item.products.category}</p>
                             {item.selected_color && !(item.selected_color as any).isGiftCard && (
@@ -168,11 +174,19 @@ const Cart = () => {
                           ) : (
                             <span className="text-xs text-muted-foreground">Digital (1)</span>
                           )}
-                          {isMaxStockReached && availableStock < 9999 && (
+                          {isOutOfStock ? (
+                            <span className="text-[10px] text-destructive font-semibold">
+                              Sold Out
+                            </span>
+                          ) : isOverStock ? (
+                            <span className="text-[10px] text-amber-600 dark:text-amber-400 font-medium">
+                              Only {availableStock} left
+                            </span>
+                          ) : isMaxStockReached && availableStock < 9999 ? (
                             <span className="text-[10px] text-amber-600 dark:text-amber-400 font-medium">
                               Max stock ({availableStock})
                             </span>
-                          )}
+                          ) : null}
                         </div>
 
                         {/* Total price */}
@@ -219,11 +233,15 @@ const Cart = () => {
                             <div>
                               <div className="flex items-center gap-1.5 flex-wrap">
                                 <h3 className="font-semibold text-sm">{item.products.name}</h3>
-                                {isDiscounted && (
+                                {isOutOfStock ? (
+                                  <span className="inline-flex items-center text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-destructive/10 text-destructive border border-destructive/20">
+                                    Out of Stock
+                                  </span>
+                                ) : isDiscounted ? (
                                   <span className="inline-flex items-center text-[9px] font-bold px-1.5 py-0.2 rounded-full bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-200">
                                     ⚡ Flash Deal
                                   </span>
-                                )}
+                                ) : null}
                               </div>
                               <p className="text-xs text-muted-foreground mt-0.5">{item.products.category}</p>
                               {item.selected_color && !(item.selected_color as any).isGiftCard && (
@@ -289,11 +307,19 @@ const Cart = () => {
                                   <span className="text-xs font-medium px-2 py-0.5 bg-secondary rounded text-muted-foreground">Digital Item</span>
                                 )}
                               </div>
-                              {isMaxStockReached && availableStock < 9999 && (
+                              {isOutOfStock ? (
+                                <span className="text-[10px] text-destructive font-semibold">
+                                  Sold Out
+                                </span>
+                              ) : isOverStock ? (
+                                <span className="text-[10px] text-amber-600 dark:text-amber-400 font-medium">
+                                  Only {availableStock} left
+                                </span>
+                              ) : isMaxStockReached && availableStock < 9999 ? (
                                 <span className="text-[10px] text-amber-600 dark:text-amber-400 font-medium">
                                   Max stock ({availableStock})
                                 </span>
-                              )}
+                              ) : null}
                             </div>
                             <div>
                               {isDiscounted ? (
@@ -367,12 +393,44 @@ const Cart = () => {
                   <span className="text-primary font-bold">GH₵{total.toFixed(2)}</span>
                 </div>
 
-                <Link to="/checkout" className="block">
-                  <Button className="w-full h-14 rounded-xl bg-foreground text-background hover:bg-foreground/90 text-sm uppercase tracking-widest font-semibold shadow-md">
-                    Proceed to Checkout
-                    <ArrowRight className="w-4 h-4 ml-2" />
-                  </Button>
-                </Link>
+                {(() => {
+                  const hasOutOfStock = cartItems.some((i) => getItemAvailableStock(i) <= 0);
+                  const hasOverStock = cartItems.some((i) => {
+                    const avail = getItemAvailableStock(i);
+                    return avail > 0 && i.quantity > avail;
+                  });
+                  const hasStockIssues = hasOutOfStock || hasOverStock;
+
+                  if (hasStockIssues) {
+                    return (
+                      <div className="space-y-3">
+                        <div className="bg-destructive/10 border border-destructive/20 rounded-xl p-3 text-xs text-destructive flex items-start gap-2">
+                          <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                          <span>
+                            {hasOutOfStock
+                              ? "Some items in your bag are out of stock. Please remove them to proceed."
+                              : "Some items exceed available stock. Please reduce quantity to proceed."}
+                          </span>
+                        </div>
+                        <Button
+                          disabled
+                          className="w-full h-14 rounded-xl opacity-50 cursor-not-allowed bg-muted text-muted-foreground text-sm uppercase tracking-widest font-semibold"
+                        >
+                          Cannot Checkout
+                        </Button>
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <Link to="/checkout" className="block">
+                      <Button className="w-full h-14 rounded-xl bg-foreground text-background hover:bg-foreground/90 text-sm uppercase tracking-widest font-semibold shadow-md">
+                        Proceed to Checkout
+                        <ArrowRight className="w-4 h-4 ml-2" />
+                      </Button>
+                    </Link>
+                  );
+                })()}
               </motion.div>
             </div>
           </div>

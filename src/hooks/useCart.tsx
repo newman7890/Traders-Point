@@ -197,6 +197,46 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     fetchCart();
   }, [fetchCart]);
 
+  // Live Realtime sync: listen for product stock updates and cart modifications
+  useEffect(() => {
+    if (!user) return;
+
+    const channel = supabase
+      .channel(`cart-realtime-sync-${user.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "products",
+        },
+        (payload) => {
+          // If the updated product is in the user's cart, refresh stock immediately
+          const isInCart = cartItemsRef.current.some((item) => item.product_id === payload.new?.id);
+          if (isInCart) {
+            fetchCart();
+          }
+        }
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "cart_items",
+          filter: `user_id=eq.${user.id}`,
+        },
+        () => {
+          fetchCart();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user, fetchCart]);
+
   // Clean up any pending debounce timers on unmount
   useEffect(() => {
     return () => {

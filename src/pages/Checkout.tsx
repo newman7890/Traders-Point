@@ -639,6 +639,22 @@ const Checkout = () => {
       return;
     }
 
+    // Pre-flight check: verify all items in cart have available stock
+    const stockIssueItem = cartItems.find((item) => {
+      const avail = getItemAvailableStock(item);
+      return avail <= 0 || item.quantity > avail;
+    });
+
+    if (stockIssueItem) {
+      const avail = getItemAvailableStock(stockIssueItem);
+      if (avail <= 0) {
+        toast.error(`"${stockIssueItem.products.name}" is now sold out. Please return to your bag to remove it.`);
+      } else {
+        toast.error(`Only ${avail} left in stock for "${stockIssueItem.products.name}". Please adjust quantity in your bag.`);
+      }
+      return;
+    }
+
     setSubmitting(true);
     try {
       const orderItems = cartItems.map((item) => ({
@@ -1032,11 +1048,15 @@ const Checkout = () => {
                           <div className="flex justify-between items-start">
                             <div>
                               <h3 className="font-semibold text-sm">{item.products.name}</h3>
-                              {isDiscounted && (
+                              {getItemAvailableStock(item) <= 0 ? (
+                                <span className="inline-flex items-center text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-destructive/10 text-destructive border border-destructive/20 mt-0.5">
+                                  Out of Stock
+                                </span>
+                              ) : isDiscounted ? (
                                 <span className="inline-flex items-center text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-200 mt-0.5">
                                   ⚡ Flash Deal
                                 </span>
-                              )}
+                              ) : null}
                             </div>
                             <div className="text-right ml-2 flex-shrink-0">
                               {isDiscounted ? (
