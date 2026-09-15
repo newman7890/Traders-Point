@@ -67,6 +67,29 @@ const formatVariantText = (colorVal: any, sizeVal: any): string => {
   return parts.length > 0 ? ` (${parts.join(", ")})` : "";
 };
 
+const getItemImage = (item: any): string | null => {
+  if (!item) return null;
+  const prod = item.products || item.product;
+
+  if (item.selected_color && typeof item.selected_color === "object" && item.selected_color.image) {
+    return item.selected_color.image;
+  }
+
+  const colorName = typeof item.selected_color === "string" ? item.selected_color : item.selected_color?.name;
+  if (colorName && prod?.colors && Array.isArray(prod.colors)) {
+    const matched = prod.colors.find(
+      (c: any) =>
+        (typeof c === "string" && c.toLowerCase().trim() === colorName.toLowerCase().trim()) ||
+        (typeof c === "object" && c?.name?.toLowerCase().trim() === colorName.toLowerCase().trim())
+    );
+    if (matched && typeof matched === "object" && matched.image) {
+      return matched.image;
+    }
+  }
+
+  return prod?.image || prod?.images?.[0] || null;
+};
+
 const handler = async (req: Request): Promise<Response> => {
   const corsHeaders = getCorsHeaders(req);
   
@@ -114,10 +137,10 @@ const handler = async (req: Request): Promise<Response> => {
       throw new Error("Order not found");
     }
 
-    // Fetch order items with product details (including seller_id)
+    // Fetch order items with product details (including seller_id, colors, images)
     const { data: rawOrderItems } = await supabase
       .from("order_items")
-      .select("*, products(name, image, seller_id)")
+      .select("*, products(name, image, images, colors, seller_id)")
       .eq("order_id", orderId);
 
     const orderItems = rawOrderItems || [];
@@ -155,7 +178,7 @@ const handler = async (req: Request): Promise<Response> => {
         calculatedSubtotal += lineTotal;
 
         const productName = (item as any).products?.name || "Product Item";
-        const productImage = (item as any).products?.image || null;
+        const productImage = getItemImage(item);
         const variantText = formatVariantText(item.selected_color, item.selected_size);
 
         itemsTableRows += `
@@ -461,7 +484,7 @@ const handler = async (req: Request): Promise<Response> => {
             sellerTotalGross += lineTotal;
 
             const pName = (sItem as any).products?.name || "Product Item";
-            const pImage = (sItem as any).products?.image || null;
+            const pImage = getItemImage(sItem);
             const vText = formatVariantText(sItem.selected_color, sItem.selected_size);
 
             sellerItemsRows += `

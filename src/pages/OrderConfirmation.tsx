@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
+import { getCartItemImage } from "@/hooks/useCart";
 
 interface OrderItem {
   id: string;
@@ -18,6 +19,8 @@ interface OrderItem {
   products?: {
     name: string;
     image: string;
+    images?: string[] | null;
+    colors?: any[] | null;
   };
 }
 
@@ -113,7 +116,9 @@ const OrderConfirmation = () => {
                 selected_size,
                 products (
                   name,
-                  image
+                  image,
+                  images,
+                  colors
                 )
               )
             `)
@@ -258,9 +263,9 @@ const OrderConfirmation = () => {
                 {order.order_items.map((item, idx) => (
                   <div key={item.id || idx} className="py-2.5 flex items-center justify-between gap-3 text-sm">
                     <div className="flex items-center gap-3 min-w-0">
-                      {(item.selected_color?.image || item.products?.image) && (
+                      {getCartItemImage(item) && (
                         <img 
-                          src={item.selected_color?.image || item.products?.image} 
+                          src={getCartItemImage(item)} 
                           alt={item.products?.name || "Product"} 
                           className="w-12 h-12 rounded-xl object-cover border border-border shrink-0 bg-secondary/50" 
                         />

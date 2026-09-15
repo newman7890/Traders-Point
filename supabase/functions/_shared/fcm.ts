@@ -178,21 +178,18 @@ export async function sendRiderPush(opts: RiderPushOptions): Promise<{ success: 
   const body = opts.body || "A new paid order is ready for delivery pickup.";
 
   const sendPromises = tokens.map(async (token: string) => {
+    // DATA-ONLY payload (no top-level "notification" key).
+    // This ensures the Flutter background handler ALWAYS fires,
+    // even when the app is killed/backgrounded on Samsung devices.
+    // The background handler then renders a high-priority local
+    // notification with custom sound, vibration, and heads-up display.
     const v1Payload = {
       message: {
         token,
-        notification: { title, body },
         android: {
           priority: "HIGH",
           ttl: "0s",
           direct_boot_ok: true,
-          notification: {
-            channel_id: "rider_delivery_channel",
-            sound: "notification",
-            default_vibrate_timings: true,
-            notification_priority: "PRIORITY_MAX",
-            visibility: "PUBLIC",
-          },
         },
         data: {
           click_action: "FLUTTER_NOTIFICATION_CLICK",

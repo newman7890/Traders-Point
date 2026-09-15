@@ -10,6 +10,7 @@ import { useRealtimeOrders } from "@/hooks/useRealtimeOrders";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { getCartItemImage } from "@/hooks/useCart";
 
 const statusConfig: Record<string, { label: string; color: string; icon: typeof Package }> = {
   pending: { label: "Order Placed", color: "bg-emerald-600", icon: Clock },
@@ -297,10 +298,41 @@ const OrderHistory = () => {
 
                   {/* Order Items */}
                   {order.order_items && order.order_items.length > 0 && (
-                    <div className="space-y-2">
-                      <p className="text-sm text-muted-foreground">
-                        {order.order_items.length} item{order.order_items.length > 1 ? "s" : ""}
-                      </p>
+                    <div className="space-y-2 pt-2 border-t border-border/50">
+                      <div className="flex items-center justify-between text-xs text-muted-foreground font-medium">
+                        <span>Items ({order.order_items.reduce((s: number, i: any) => s + (i.quantity || 1), 0)})</span>
+                      </div>
+                      <div className="space-y-2">
+                        {order.order_items.map((item: any, itemIdx: number) => {
+                          const itemImg = getCartItemImage(item);
+                          const prodName = item.products?.name || "Product Item";
+                          const colorName = typeof item.selected_color === "string" ? item.selected_color : item.selected_color?.name;
+                          return (
+                            <div key={item.id || itemIdx} className="flex items-center gap-3 bg-secondary/30 rounded-xl p-2.5">
+                              {itemImg && (
+                                <img
+                                  src={itemImg}
+                                  alt={prodName}
+                                  className="w-12 h-12 rounded-lg object-cover border border-border shrink-0 bg-background"
+                                />
+                              )}
+                              <div className="min-w-0 flex-1">
+                                <p className="text-sm font-medium text-foreground truncate">{prodName}</p>
+                                <p className="text-xs text-muted-foreground">
+                                  Qty: <span className="font-semibold text-foreground">{item.quantity}</span>
+                                  {item.selected_size && <span> • Size: {item.selected_size}</span>}
+                                  {colorName && <span> • Color: {colorName}</span>}
+                                </p>
+                              </div>
+                              <div className="text-right shrink-0">
+                                <p className="text-sm font-semibold">
+                                  GH₵{((item.price || 0) * (item.quantity || 1)).toFixed(2)}
+                                </p>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
                     </div>
                   )}
 

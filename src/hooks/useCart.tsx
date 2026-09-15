@@ -26,6 +26,8 @@ export interface CartItem {
 export const getCartItemImage = (item: CartItem | any): string => {
   if (!item) return "/placeholder.svg";
 
+  const prod = item?.products || item?.product;
+
   // 1. If item has selected_color with an explicit image
   if (item.selected_color && typeof item.selected_color === "object" && item.selected_color.image) {
     return item.selected_color.image;
@@ -33,8 +35,8 @@ export const getCartItemImage = (item: CartItem | any): string => {
 
   // 2. If item.selected_color has a name, find matching color image in products.colors
   const colorName = typeof item.selected_color === "string" ? item.selected_color : item.selected_color?.name;
-  if (colorName && item.products?.colors && Array.isArray(item.products.colors)) {
-    const matched = item.products.colors.find(
+  if (colorName && prod?.colors && Array.isArray(prod.colors)) {
+    const matched = prod.colors.find(
       (c: any) =>
         (typeof c === "string" && c.toLowerCase().trim() === colorName.toLowerCase().trim()) ||
         (typeof c === "object" && c?.name?.toLowerCase().trim() === colorName.toLowerCase().trim())
@@ -45,7 +47,7 @@ export const getCartItemImage = (item: CartItem | any): string => {
   }
 
   // 3. Fallback to product primary image or first gallery image
-  return item.products?.image || item.products?.images?.[0] || "/placeholder.svg";
+  return prod?.image || prod?.images?.[0] || "/placeholder.svg";
 };
 
 export const getCartItemAvailableStock = (item: CartItem | any): number => {
@@ -233,8 +235,8 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
               (typeof c === "string" && c.toLowerCase().trim() === selectedColor.name.toLowerCase().trim()) ||
               (typeof c === "object" && c?.name?.toLowerCase().trim() === selectedColor.name.toLowerCase().trim())
           );
-          if (matched && typeof matched === "object" && typeof matched.stock === "number") {
-            availableStock = Math.max(0, matched.stock);
+          if (matched && typeof matched === "object" && typeof (matched as any).stock === "number") {
+            availableStock = Math.max(0, (matched as any).stock);
           } else if (typeof productData.stock === "number") {
             availableStock = Math.max(0, productData.stock);
           }

@@ -53,7 +53,14 @@ export const useOrders = () => {
             quantity,
             price,
             selected_color,
-            selected_size
+            selected_size,
+            products (
+              id,
+              name,
+              image,
+              images,
+              colors
+            )
           )
         `)
         .eq("user_id", user.id)

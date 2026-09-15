@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { Eye, Package, Truck, CheckCircle, CheckCircle2, Clock, XCircle, Mail, ShieldCheck, KeyRound, Bike, Building2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { createNotification } from "@/services/notificationService";
+import { getCartItemImage } from "@/hooks/useCart";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -120,7 +121,9 @@ export const OrderManagement = () => {
               products (
                 id,
                 name,
-                image
+                image,
+                images,
+                colors
               )
             )
           `)
@@ -469,7 +472,7 @@ export const OrderManagement = () => {
                 <div className="bg-secondary/50 p-4 rounded-lg">
                   {selectedOrder.order_items?.map((item: any) => {
                     const prod = Array.isArray(item.products) ? item.products[0] : item.products;
-                    const itemImage = item.selected_color?.image || prod?.image;
+                    const itemImage = getCartItemImage(item);
                     return (
                       <div key={item.id} className="flex items-center justify-between py-2.5 border-b border-border last:border-0 gap-3">
                         <div className="flex items-center gap-2.5 min-w-0">

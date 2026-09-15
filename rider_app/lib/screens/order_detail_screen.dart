@@ -1221,6 +1221,39 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     );
   }
 
+  String? _getItemImage(Map<String, dynamic> item) {
+    final selectedColor = item['selected_color'];
+    final product = item['products'] as Map<String, dynamic>?;
+
+    if (selectedColor is Map && selectedColor['image'] != null && selectedColor['image'].toString().isNotEmpty) {
+      return selectedColor['image'].toString();
+    }
+
+    final String? colorName = selectedColor is String
+        ? selectedColor
+        : (selectedColor is Map ? selectedColor['name']?.toString() : null);
+
+    if (colorName != null && product != null && product['colors'] is List) {
+      final colors = product['colors'] as List;
+      for (var c in colors) {
+        if (c is Map && c['name'] != null && c['image'] != null) {
+          if (c['name'].toString().trim().toLowerCase() == colorName.trim().toLowerCase()) {
+            final String img = c['image'].toString();
+            if (img.isNotEmpty) return img;
+          }
+        }
+      }
+    }
+
+    if (product != null && product['image'] != null && product['image'].toString().isNotEmpty) {
+      return product['image'].toString();
+    }
+    if (product != null && product['images'] is List && (product['images'] as List).isNotEmpty) {
+      return (product['images'] as List).first.toString();
+    }
+    return null;
+  }
+
   Widget _buildOrderItems(Map<String, dynamic> order) {
     return _buildSectionCard(
       child: Column(
@@ -1234,15 +1267,16 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
           ..._items.map((item) {
             final product = item['products'] as Map<String, dynamic>?;
             final price = (item['price'] as num?)?.toDouble() ?? 0;
+            final itemImg = _getItemImage(item);
             return Padding(
               padding: const EdgeInsets.only(bottom: 12),
               child: Row(
                 children: [
-                  if (product?['image'] != null)
+                  if (itemImg != null)
                     ClipRRect(
                       borderRadius: BorderRadius.circular(12),
                       child: Image.network(
-                        product!['image'],
+                        itemImg,
                         width: 48,
                         height: 48,
                         fit: BoxFit.cover,

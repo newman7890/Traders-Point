@@ -27,6 +27,7 @@ import { PRESET_CATEGORIES_BY_DEPARTMENT } from "@/constants/categories";
 import { processAiBackgroundRemoval } from "@/utils/imageStudio";
 import { CategoryCombobox } from "@/components/common/CategoryCombobox";
 import { createNotification } from "@/services/notificationService";
+import { getCartItemImage } from "@/hooks/useCart";
 
 const productSchema = z.object({
   name: z.string().trim().min(1, "Name required").max(100),
@@ -422,7 +423,7 @@ const SellerDashboard = () => {
       supabase.from("products").select("*").eq("seller_id", user.id).order("created_at", { ascending: false }),
       supabase
         .from("order_items")
-        .select("id, quantity, unit_price, seller_earnings, commission_amount, commission_percent, created_at, order_id, product_id, products(name, image, category), orders(id, status, tracking_code, pickup_otp, pickup_confirmed_at, shipping_name, shipping_city, payment_status, created_at)")
+        .select("id, quantity, unit_price, seller_earnings, commission_amount, commission_percent, created_at, order_id, product_id, selected_color, selected_size, products(name, image, images, colors, category), orders(id, status, tracking_code, pickup_otp, pickup_confirmed_at, shipping_name, shipping_city, payment_status, created_at)")
         .eq("seller_id", user.id)
         .order("created_at", { ascending: false })
         .limit(250),
@@ -1801,9 +1802,9 @@ const SellerDashboard = () => {
                                     {/* Item Info */}
                                     <div className="flex items-center gap-3 min-w-0">
                                       <div className="w-12 h-12 rounded-xl bg-secondary overflow-hidden shrink-0 border border-border">
-                                        {item.products?.image ? (
+                                        {getCartItemImage(item) ? (
                                           <img
-                                            src={item.products.image}
+                                            src={getCartItemImage(item)}
                                             alt={item.products.name || "Product"}
                                             className="w-full h-full object-cover"
                                           />
@@ -1950,8 +1951,8 @@ const SellerDashboard = () => {
                                 <td className="py-3 px-3 max-w-[200px]">
                                   <div className="flex items-center gap-2">
                                     <div className="w-8 h-8 rounded-lg bg-secondary overflow-hidden shrink-0 border border-border">
-                                      {item.products?.image ? (
-                                        <img src={item.products.image} alt="Product" className="w-full h-full object-cover" />
+                                      {getCartItemImage(item) ? (
+                                        <img src={getCartItemImage(item)} alt="Product" className="w-full h-full object-cover" />
                                       ) : (
                                         <Package className="w-4 h-4 m-2 text-muted-foreground opacity-40" />
                                       )}

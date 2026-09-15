@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { createNotification } from "@/services/notificationService";
+import { getCartItemImage } from "@/hooks/useCart";
 
 interface OrderItem {
   id: string;
@@ -88,7 +89,7 @@ const RiderOrderDetail = () => {
     try {
       const [orderRes, itemsRes] = await Promise.all([
         supabase.from("orders").select("*").eq("id", id!).single(),
-        supabase.from("order_items").select("*, products(name, image, seller_id)").eq("order_id", id!),
+        supabase.from("order_items").select("*, products(name, image, images, colors, seller_id)").eq("order_id", id!),
       ]);
       if (orderRes.error) throw orderRes.error;
       setOrder(orderRes.data);
@@ -410,7 +411,7 @@ const RiderOrderDetail = () => {
             </div>
             <div className="space-y-3">
               {items.map((item) => {
-                const itemImg = item.selected_color?.image || item.products?.image;
+                const itemImg = getCartItemImage(item);
                 return (
                   <div key={item.id} className="flex items-center gap-3">
                     {itemImg && (
