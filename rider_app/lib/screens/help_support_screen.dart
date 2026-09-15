@@ -168,6 +168,10 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
           children: [
             // Quick Call & WhatsApp Cards
             _buildContactButtons(),
+            const SizedBox(height: 20),
+
+            // Policy Quick Banner
+            _buildPolicyBanner(),
             const SizedBox(height: 24),
 
             // Submit Ticket Card
@@ -180,6 +184,56 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
 
             // FAQ Accordion
             _buildFAQSection(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPolicyBanner() {
+    return GestureDetector(
+      onTap: () => Navigator.of(context).pushNamed('/policy'),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [Color(0xFF0F2027), Color(0xFF203A43)],
+          ),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppTheme.primary.withValues(alpha: 0.3)),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: AppTheme.primary.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(LucideIcons.fileShield, color: AppTheme.primary, size: 22),
+            ),
+            const SizedBox(width: 14),
+            const Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'TradesPoint.store Rider Policy',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                    ),
+                  ),
+                  SizedBox(height: 2),
+                  Text(
+                    'Read the complete 20 rules & delivery standards',
+                    style: TextStyle(color: Color(0xFF94A3B8), fontSize: 11),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(LucideIcons.chevronRight, color: Color(0xFF94A3B8), size: 18),
           ],
         ),
       ),

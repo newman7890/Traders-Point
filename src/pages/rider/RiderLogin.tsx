@@ -4,7 +4,8 @@ import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
-import { Eye, EyeOff, Loader2, Bike, KeyRound, User, Phone, ShieldCheck } from "lucide-react";
+import { Eye, EyeOff, Loader2, Bike, KeyRound, User, Phone, ShieldCheck, FileCheck, ExternalLink } from "lucide-react";
+import { RiderPolicyModal } from "./RiderPolicyModal";
 
 const RiderLogin = () => {
   const [isRegister, setIsRegister] = useState(false);
@@ -16,6 +17,8 @@ const RiderLogin = () => {
   const [accessCode, setAccessCode] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [agreedToPolicy, setAgreedToPolicy] = useState(false);
+  const [showPolicyModal, setShowPolicyModal] = useState(false);
   
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -71,6 +74,15 @@ const RiderLogin = () => {
 
     if (!cleanCode) {
       toast({ title: "Access Code Required", description: "Please enter your Admin-issued Access Code.", variant: "destructive" });
+      return;
+    }
+
+    if (!agreedToPolicy) {
+      toast({
+        title: "Policy Agreement Required",
+        description: "You must read and agree to the TradesPoint Rider Policy before registering.",
+        variant: "destructive",
+      });
       return;
     }
 
@@ -307,6 +319,53 @@ const RiderLogin = () => {
                   </div>
                 </div>
 
+                {/* Rider Policy Agreement Box */}
+                <div
+                  className={`p-4 rounded-xl border transition-all ${
+                    agreedToPolicy
+                      ? "bg-[#0d1624] border-[#4ade80]/40"
+                      : "bg-[#161d2d] border-amber-500/30"
+                  }`}
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="font-semibold text-white flex items-center gap-1.5 text-xs">
+                      <ShieldCheck className={`w-4 h-4 ${agreedToPolicy ? "text-[#4ade80]" : "text-amber-400"}`} />
+                      Mandatory Rider Policy
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setShowPolicyModal(true)}
+                      className="text-[#4ade80] hover:underline flex items-center gap-1 text-[11px] font-bold"
+                    >
+                      Read Policy <ExternalLink className="w-3 h-3" />
+                    </button>
+                  </div>
+                  <p className="text-white/50 text-[11px] mb-3 leading-relaxed">
+                    All delivery riders must follow strict standards regarding order integrity, OTP verification, customer conduct, zero-tolerance fraud, and privacy.
+                  </p>
+                  <label className="flex items-start gap-2.5 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={agreedToPolicy}
+                      onChange={(e) => setAgreedToPolicy(e.target.checked)}
+                      className="mt-0.5 w-4 h-4 rounded border-white/20 bg-[#0f1620] text-[#4ade80] focus:ring-[#4ade80]"
+                    />
+                    <span className="text-white/80 text-[11px] leading-snug">
+                      I have read, understood, and agree to the{" "}
+                      <span
+                        onClick={(e) => {
+                          e.preventDefault();
+                          setShowPolicyModal(true);
+                        }}
+                        className="text-[#4ade80] underline font-bold cursor-pointer"
+                      >
+                        TradesPoint.store Rider Policy (20 Articles)
+                      </span>{" "}
+                      and standards.
+                    </span>
+                  </label>
+                </div>
+
                 <motion.button
                   type="submit"
                   disabled={loading}
@@ -379,6 +438,17 @@ const RiderLogin = () => {
                   )}
                 </motion.button>
               </form>
+
+              {/* Policy link under login */}
+              <div className="mt-4 text-center">
+                <button
+                  type="button"
+                  onClick={() => setShowPolicyModal(true)}
+                  className="text-xs text-[#4ade80] hover:underline font-semibold inline-flex items-center gap-1.5"
+                >
+                  <ShieldCheck className="w-3.5 h-3.5" /> TradesPoint.store Rider Policy & Standards
+                </button>
+              </div>
             </div>
           )}
 
@@ -387,6 +457,14 @@ const RiderLogin = () => {
           </p>
         </motion.div>
       </div>
+
+      {/* Rider Policy Modal */}
+      <RiderPolicyModal
+        isOpen={showPolicyModal}
+        onClose={() => setShowPolicyModal(false)}
+        showAgreeButton={isRegister}
+        onAgree={() => setAgreedToPolicy(true)}
+      />
     </div>
   );
 };

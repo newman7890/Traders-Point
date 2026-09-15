@@ -7,9 +7,10 @@ import { useToast } from "@/hooks/use-toast";
 import {
   Package, MapPin, Phone, CheckCircle2,
   RefreshCw, Loader2, Clock, ChevronRight, LogOut, Bike,
-  LayoutGrid, Bell, User, KeyRound, Truck
+  LayoutGrid, Bell, User, KeyRound, Truck, ShieldCheck
 } from "lucide-react";
 import { createNotification } from "@/services/notificationService";
+import { RiderPolicyModal } from "./RiderPolicyModal";
 
 interface Order {
   id: string;
@@ -54,6 +55,7 @@ const RiderDashboard = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [filter, setFilter] = useState<"active" | "available" | "delivered" | "all">("active");
   const [activeTab, setActiveTab] = useState<"orders" | "profile">("orders");
+  const [showPolicyModal, setShowPolicyModal] = useState(false);
   const { user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -453,6 +455,18 @@ const RiderDashboard = () => {
               </div>
             </motion.div>
 
+            {/* Rider Policy Button */}
+            <motion.button
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.14 }}
+              onClick={() => setShowPolicyModal(true)}
+              className="w-full h-12 rounded-2xl border border-white/10 bg-[#0f172a] text-white font-semibold text-sm flex items-center justify-center gap-2 hover:bg-[#1a2234] transition-colors mb-3"
+            >
+              <ShieldCheck className="w-4 h-4 text-[#4ade80]" /> Rider Policy & Delivery Standards
+              <ChevronRight className="w-4 h-4 text-white/40 ml-auto" />
+            </motion.button>
+
             {/* Sign Out */}
             <motion.button
               initial={{ opacity: 0, y: 10 }}
@@ -490,6 +504,12 @@ const RiderDashboard = () => {
           <div className="w-28 h-1 bg-white/20 rounded-full" />
         </div>
       </div>
+
+      {/* Rider Policy Modal */}
+      <RiderPolicyModal
+        isOpen={showPolicyModal}
+        onClose={() => setShowPolicyModal(false)}
+      />
     </div>
   );
 };

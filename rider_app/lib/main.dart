@@ -7,6 +7,7 @@ import 'screens/login_screen.dart';
 import 'screens/dashboard_screen.dart';
 import 'screens/order_detail_screen.dart';
 import 'screens/help_support_screen.dart';
+import 'screens/rider_policy_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -67,6 +68,8 @@ class RiderApp extends StatelessWidget {
             return MaterialPageRoute(builder: (_) => const LoginScreen());
           case '/dashboard':
             return MaterialPageRoute(builder: (_) => const DashboardScreen());
+          case '/policy':
+            return MaterialPageRoute(builder: (_) => const RiderPolicyScreen());
           default:
             return MaterialPageRoute(builder: (_) => const LoginScreen());
         }

@@ -896,6 +896,37 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ),
           const SizedBox(height: 16),
 
+          // Rider Policy & Code of Conduct button
+          GestureDetector(
+            onTap: () => Navigator.of(context).pushNamed('/policy'),
+            child: Container(
+              height: 52,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(16),
+                color: const Color(0xFF0F172A),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(LucideIcons.fileShield, size: 18, color: AppTheme.primary),
+                  const SizedBox(width: 10),
+                  const Text(
+                    'Rider Policy & Delivery Standards',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  Icon(LucideIcons.chevronRight, size: 16, color: Colors.white.withValues(alpha: 0.4)),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+
           // Help & Support button
           GestureDetector(
             onTap: () => Navigator.of(context).pushNamed('/support'),

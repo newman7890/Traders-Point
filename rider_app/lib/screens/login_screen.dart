@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../services/supabase_service.dart';
 import '../theme/app_theme.dart';
+import 'rider_policy_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -18,6 +19,7 @@ class _LoginScreenState extends State<LoginScreen>
   bool _showPassword = false;
   bool _loading = false;
   bool _isRegister = false;
+  bool _agreedToPolicy = false;
 
   // Registration-only fields
   final _fullNameController = TextEditingController();
@@ -137,6 +139,20 @@ class _LoginScreenState extends State<LoginScreen>
     }
   }
 
+  void _openPolicyModal() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => RiderPolicyScreen(
+          showAgreeButton: true,
+          onAgree: () {
+            setState(() => _agreedToPolicy = true);
+            Navigator.of(context).pop();
+          },
+        ),
+      ),
+    );
+  }
+
   Future<void> _handleRegister() async {
     if (_loading) return;
 
@@ -164,6 +180,13 @@ class _LoginScreenState extends State<LoginScreen>
     }
     if (password.length < 6) {
       _showSnack('Password must be at least 6 characters long.', isError: true);
+      return;
+    }
+    if (!_agreedToPolicy) {
+      _showSnack(
+        'You must read and agree to the TradesPoint Rider Policy before registering.',
+        isError: true,
+      );
       return;
     }
 
@@ -471,7 +494,25 @@ class _LoginScreenState extends State<LoginScreen>
             // Sign In button
             _buildActionButton('Sign In →', _handleLogin),
 
-            const SizedBox(height: 24),
+            const SizedBox(height: 20),
+
+            // Policy Link for Login
+            Center(
+              child: TextButton.icon(
+                onPressed: () => Navigator.of(context).pushNamed('/policy'),
+                icon: const Icon(LucideIcons.scrollText, size: 14, color: AppTheme.primary),
+                label: const Text(
+                  'TradesPoint.store Rider Policy & Standards',
+                  style: TextStyle(
+                    color: AppTheme.primary,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 12),
             Center(
               child: Text(
                 'Only authorized delivery riders with an Admin Access Code can access this portal.',
@@ -602,7 +643,12 @@ class _LoginScreenState extends State<LoginScreen>
             const SizedBox(height: 8),
             _buildPasswordField(),
 
-            const SizedBox(height: 28),
+            const SizedBox(height: 24),
+
+            // Policy Agreement Box
+            _buildPolicyAgreementBox(),
+
+            const SizedBox(height: 24),
 
             // Register button
             _buildActionButton(
@@ -624,6 +670,149 @@ class _LoginScreenState extends State<LoginScreen>
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildPolicyAgreementBox() {
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFF0D1522),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: _agreedToPolicy
+              ? AppTheme.primary.withValues(alpha: 0.6)
+              : Colors.amber.shade700.withValues(alpha: 0.4),
+          width: _agreedToPolicy ? 1.5 : 1.0,
+        ),
+      ),
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: _agreedToPolicy
+                      ? AppTheme.primary.withValues(alpha: 0.15)
+                      : Colors.amber.shade700.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(
+                  LucideIcons.fileShield,
+                  size: 16,
+                  color: _agreedToPolicy ? AppTheme.primary : Colors.amber.shade400,
+                ),
+              ),
+              const SizedBox(width: 10),
+              const Expanded(
+                child: Text(
+                  'Mandatory Rider Policy',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13,
+                  ),
+                ),
+              ),
+              GestureDetector(
+                onTap: _openPolicyModal,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: AppTheme.primary.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: AppTheme.primary.withValues(alpha: 0.4)),
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'Read Policy',
+                        style: TextStyle(
+                          color: AppTheme.primary,
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      SizedBox(width: 4),
+                      Icon(LucideIcons.externalLink, size: 11, color: AppTheme.primary),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Text(
+            'All delivery riders are subject to strict standards on order handling, OTP verification, customer conduct, zero-tolerance fraud rules, and privacy.',
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.6),
+              fontSize: 11,
+              height: 1.4,
+            ),
+          ),
+          const SizedBox(height: 12),
+          GestureDetector(
+            onTap: () => setState(() => _agreedToPolicy = !_agreedToPolicy),
+            behavior: HitTestBehavior.opaque,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: Checkbox(
+                    value: _agreedToPolicy,
+                    activeColor: AppTheme.primary,
+                    checkColor: Colors.black,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                    side: BorderSide(
+                      color: _agreedToPolicy
+                          ? AppTheme.primary
+                          : Colors.white.withValues(alpha: 0.3),
+                      width: 1.5,
+                    ),
+                    onChanged: (val) {
+                      setState(() => _agreedToPolicy = val ?? false);
+                    },
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 2),
+                    child: RichText(
+                      text: TextSpan(
+                        style: const TextStyle(fontSize: 12, height: 1.4),
+                        children: [
+                          TextSpan(
+                            text: 'I have read, understood, and agree to the ',
+                            style: TextStyle(color: Colors.white.withValues(alpha: 0.8)),
+                          ),
+                          const TextSpan(
+                            text: 'TradesPoint.store Rider Policy (20 Articles)',
+                            style: TextStyle(
+                              color: AppTheme.primary,
+                              fontWeight: FontWeight.bold,
+                              decoration: TextDecoration.underline,
+                            ),
+                          ),
+                          TextSpan(
+                            text: ' and delivery standards.',
+                            style: TextStyle(color: Colors.white.withValues(alpha: 0.8)),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
