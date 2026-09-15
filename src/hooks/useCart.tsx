@@ -75,6 +75,8 @@ export const getCartItemAvailableStock = (item: CartItem | any): number => {
   return 9999;
 };
 
+export const getItemAvailableStock = getCartItemAvailableStock;
+
 export const getCartItemUnitPrice = (item: CartItem): number => {
   if (!item.products) return 0;
   const p = item.products;
