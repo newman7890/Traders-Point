@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Header } from "@/components/Header";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
+import { CancelOrderDialog } from "@/components/CancelOrderDialog";
 
 interface Order {
   id: string;
@@ -38,6 +39,7 @@ const TrackOrder = () => {
   const [searched, setSearched] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [deliveryOtp, setDeliveryOtp] = useState<string | null>(null);
+  const [showCancelDialog, setShowCancelDialog] = useState(false);
   const { user } = useAuth();
 
 
@@ -327,14 +329,39 @@ const TrackOrder = () => {
               </div>
             </div>
 
-            <div className="text-center">
-              <Link to="/products">
-                <Button variant="outline" className="rounded-full">
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+              <Link to="/products" className="w-full sm:w-auto">
+                <Button variant="outline" className="w-full rounded-xl">
                   Continue Shopping
                 </Button>
               </Link>
+              {order && ["pending", "confirmed", "processing"].includes(order.status) && (
+                <Button
+                  variant="outline"
+                  onClick={() => setShowCancelDialog(true)}
+                  className="w-full sm:w-auto rounded-xl gap-2 text-destructive border-destructive/30 hover:bg-destructive/10 hover:text-destructive hover:border-destructive transition-colors text-sm font-semibold"
+                >
+                  <XCircle className="w-4 h-4" />
+                  Cancel Order
+                </Button>
+              )}
             </div>
           </motion.div>
+        )}
+
+        {/* Cancel Order Confirmation Modal */}
+        {order && (
+          <CancelOrderDialog
+            isOpen={showCancelDialog}
+            onClose={() => setShowCancelDialog(false)}
+            orderId={order.id}
+            orderShortId={order.id.slice(0, 8).toUpperCase()}
+            totalAmount={order.total_amount}
+            currency={order.currency || "GH₵"}
+            onSuccess={() => {
+              searchOrder(order.tracking_code || trackingInput);
+            }}
+          />
         )}
 
         {!order && !loading && !searched && (

@@ -11,6 +11,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { getCartItemImage } from "@/hooks/useCart";
+import { CancelOrderDialog } from "@/components/CancelOrderDialog";
 
 const statusConfig: Record<string, { label: string; color: string; icon: typeof Package }> = {
   pending: { label: "Order Placed", color: "bg-emerald-600", icon: Clock },
@@ -30,10 +31,14 @@ const OrderHistory = () => {
   const { orders, loading, refetchOrders } = useOrders();
   const { t } = useLanguage();
   const [retryingOrderId, setRetryingOrderId] = useState<string | null>(null);
+  const [cancellingOrder, setCancellingOrder] = useState<any | null>(null);
   const [deliveryOtps, setDeliveryOtps] = useState<Record<string, string>>({});
 
   const canRetryPayment = (status: string) =>
     ["cancelled", "payment_failed", "pending"].includes(status);
+
+  const canCancelOrder = (status: string) =>
+    ["pending", "confirmed", "processing"].includes(status);
 
   // Fetch delivery OTPs for shipped orders
   useEffect(() => {
@@ -360,28 +365,55 @@ const OrderHistory = () => {
                     </p>
                   </div>
 
-                  {/* Retry Payment */}
-                  {canRetryPayment(order.status) && (
-                    <Button
-                      onClick={() => retryPayment(order)}
-                      disabled={retryingOrderId === order.id}
-                      className="w-full rounded-xl gap-2"
-                      variant="outline"
-                    >
-                      {retryingOrderId === order.id ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                      ) : (
-                        <RotateCcw className="w-4 h-4" />
-                      )}
-                      Retry Payment
-                    </Button>
-                  )}
+                  {/* Action Buttons: Cancel Order & Retry Payment */}
+                  <div className="flex flex-col sm:flex-row gap-2 pt-1">
+                    {canCancelOrder(order.status) && (
+                      <Button
+                        onClick={() => setCancellingOrder(order)}
+                        variant="outline"
+                        className="flex-1 rounded-xl gap-2 text-destructive border-destructive/30 hover:bg-destructive/10 hover:text-destructive hover:border-destructive transition-colors text-xs font-semibold"
+                      >
+                        <XCircle className="w-4 h-4" />
+                        Cancel Order
+                      </Button>
+                    )}
+                    {canRetryPayment(order.status) && (
+                      <Button
+                        onClick={() => retryPayment(order)}
+                        disabled={retryingOrderId === order.id}
+                        className="flex-1 rounded-xl gap-2 text-xs font-semibold"
+                        variant="outline"
+                      >
+                        {retryingOrderId === order.id ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <RotateCcw className="w-4 h-4" />
+                        )}
+                        Retry Payment
+                      </Button>
+                    )}
+                  </div>
                 </motion.div>
               );
             })}
           </div>
         )}
       </div>
+
+      {/* Cancel Order Confirmation Modal */}
+      {cancellingOrder && (
+        <CancelOrderDialog
+          isOpen={!!cancellingOrder}
+          onClose={() => setCancellingOrder(null)}
+          orderId={cancellingOrder.id}
+          orderShortId={cancellingOrder.id.slice(0, 8).toUpperCase()}
+          totalAmount={cancellingOrder.total_amount}
+          currency={cancellingOrder.currency || "GH₵"}
+          onSuccess={() => {
+            refetchOrders();
+          }}
+        />
+      )}
     </main>
   );
 };
