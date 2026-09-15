@@ -701,7 +701,7 @@ class _LoginScreenState extends State<LoginScreen>
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Icon(
-                  LucideIcons.fileShield,
+                  LucideIcons.shieldCheck,
                   size: 16,
                   color: _agreedToPolicy ? AppTheme.primary : Colors.amber.shade400,
                 ),

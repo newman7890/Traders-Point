@@ -909,7 +909,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(LucideIcons.fileShield, size: 18, color: AppTheme.primary),
+                  Icon(LucideIcons.shieldCheck, size: 18, color: AppTheme.primary),
                   const SizedBox(width: 10),
                   const Text(
                     'Rider Policy & Delivery Standards',

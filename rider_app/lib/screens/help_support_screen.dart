@@ -210,7 +210,7 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
                 color: AppTheme.primary.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: const Icon(LucideIcons.fileShield, color: AppTheme.primary, size: 22),
+              child: const Icon(LucideIcons.shieldCheck, color: AppTheme.primary, size: 22),
             ),
             const SizedBox(width: 14),
             const Expanded(
