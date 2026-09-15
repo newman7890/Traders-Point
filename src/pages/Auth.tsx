@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -293,6 +293,20 @@ const Auth = () => {
                   >
                     {loading ? "Loading..." : isLogin ? "Sign In" : "Sign Up"}
                   </Button>
+
+                  {!isLogin && (
+                    <p className="text-[11px] text-center text-muted-foreground mt-2 leading-tight">
+                      By creating an account, you agree to TradesPoint's{" "}
+                      <Link to="/policy?tab=terms" target="_blank" className="underline text-emerald-600 dark:text-emerald-400 font-medium">
+                        Terms of Service
+                      </Link>{" "}
+                      and{" "}
+                      <Link to="/policy?tab=privacy" target="_blank" className="underline text-emerald-600 dark:text-emerald-400 font-medium">
+                        Privacy Policy
+                      </Link>
+                      .
+                    </p>
+                  )}
                 </form>
 
                 <button

@@ -9,7 +9,8 @@ import {
   User,
   Mail,
   Lock,
-  Shield
+  Shield,
+  Scale
 } from "lucide-react";
 
 const languages = [
@@ -36,7 +37,8 @@ const Settings = () => {
 
   const securityItems = [
     { icon: Lock, label: t("changePassword"), path: "/settings/password" },
-    { icon: Shield, label: t("privacyPolicy"), path: "/settings/privacy" },
+    { icon: Scale, label: "Platform Policies & Terms", path: "/policy" },
+    { icon: Shield, label: t("privacyPolicy"), path: "/privacy" },
   ];
 
   return (

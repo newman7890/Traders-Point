@@ -88,7 +88,12 @@ const App = () => (
                     <Route path="/settings/language" element={<Language />} />
                     <Route path="/settings/contact" element={<ContactUs />} />
                     <Route path="/settings/password" element={<ChangePassword />} />
-                    <Route path="/settings/privacy" element={<PrivacyPolicy />} />
+                    <Route path="/settings/privacy" element={<PrivacyPolicy defaultTab="privacy" />} />
+                    <Route path="/policy" element={<PrivacyPolicy />} />
+                    <Route path="/terms" element={<PrivacyPolicy defaultTab="terms" />} />
+                    <Route path="/privacy" element={<PrivacyPolicy defaultTab="privacy" />} />
+                    <Route path="/buyer-protection" element={<PrivacyPolicy defaultTab="buyer" />} />
+                    <Route path="/returns" element={<PrivacyPolicy defaultTab="buyer" />} />
                     <Route path="/orders" element={<OrderHistory />} />
                     <Route path="/payment/callback" element={<PaymentCallback />} />
                     <Route path="/wishlist/:token" element={<SharedWishlist />} />

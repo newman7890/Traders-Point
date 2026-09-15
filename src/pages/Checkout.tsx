@@ -1110,7 +1110,14 @@ const Checkout = () => {
                 </Button>
 
                 <p className="text-xs text-center text-muted-foreground">
-                  By placing this order, you agree to our Terms of Service and Privacy Policy
+                  By placing this order, you agree to our{" "}
+                  <Link to="/policy?tab=terms" target="_blank" className="underline hover:text-foreground text-emerald-600 dark:text-emerald-400 font-medium">
+                    Terms of Service
+                  </Link>{" "}
+                  and{" "}
+                  <Link to="/policy?tab=privacy" target="_blank" className="underline hover:text-foreground text-emerald-600 dark:text-emerald-400 font-medium">
+                    Privacy Policy
+                  </Link>
                 </p>
               </form>
             </motion.div>
