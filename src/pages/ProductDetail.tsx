@@ -235,8 +235,18 @@ const ProductDetail = () => {
         }
         return;
       }
-      const colorObj = colors.find(c => c.name === selectedColor) || null;
-      addToCart(product.id, quantity, colorObj, selectedSize);
+      const selectedColorObj = colors.find((c) => c.name === selectedColor) || null;
+      const colorObjWithImage = selectedColorObj
+        ? {
+            name: selectedColorObj.name,
+            hex: selectedColorObj.hex,
+            image: selectedColorObj.image || activeMainImage || product.image || null,
+          }
+        : selectedColor
+        ? { name: selectedColor, hex: "#cccccc", image: activeMainImage || product.image || null }
+        : null;
+
+      addToCart(product.id, quantity, colorObjWithImage, selectedSize);
     }
   };
 

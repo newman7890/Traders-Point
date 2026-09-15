@@ -221,7 +221,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // 1. Fetch current product and variant stock info
       const { data: productData } = await supabase
         .from("products")
-        .select("id, name, stock, colors")
+        .select("id, name, stock, colors, image, images")
         .eq("id", productId)
         .maybeSingle();
 
@@ -245,6 +245,41 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       }
 
+      // Build normalized selected_color object with valid image URL
+      let finalSelectedColor: any = selectedColor;
+      if (selectedColor && productData) {
+        const colorName = typeof selectedColor === "string" ? selectedColor : selectedColor.name;
+        let colorImage = typeof selectedColor === "object" ? selectedColor.image : null;
+
+        if (!colorImage && colorName && Array.isArray(productData.colors)) {
+          const matched = productData.colors.find(
+            (c: any) =>
+              (typeof c === "string" && c.toLowerCase().trim() === colorName.toLowerCase().trim()) ||
+              (typeof c === "object" && c?.name?.toLowerCase().trim() === colorName.toLowerCase().trim())
+          );
+          if (matched && typeof matched === "object" && (matched as any).image) {
+            colorImage = (matched as any).image;
+          }
+        }
+
+        if (!colorImage) {
+          colorImage = (productData as any).image || (productData as any).images?.[0] || null;
+        }
+
+        if (typeof selectedColor === "object" && selectedColor !== null) {
+          finalSelectedColor = {
+            ...selectedColor,
+            image: colorImage,
+          };
+        } else if (selectedColor) {
+          finalSelectedColor = {
+            name: selectedColor,
+            hex: "#cccccc",
+            image: colorImage,
+          };
+        }
+      }
+
       // Check if item already exists in cart with the exact same user, product, color, and size
       const { data: existingItems } = await supabase
         .from("cart_items")
@@ -252,7 +287,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .eq("user_id", user.id)
         .eq("product_id", productId);
 
-      const incomingColorName = selectedColor?.name?.trim() || "";
+      const incomingColorName = (selectedColor as any)?.name?.trim() || (typeof selectedColor === "string" ? (selectedColor as string).trim() : "");
       const incomingSize = selectedSize?.trim() || "";
 
       // Find an item with the EXACT same color and size variant
@@ -281,7 +316,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
           .from("cart_items")
           .update({
             quantity: newQty,
-            ...(selectedColor ? { selected_color: selectedColor } : {}),
+            ...(finalSelectedColor ? { selected_color: finalSelectedColor } : {}),
             ...(selectedSize ? { selected_size: selectedSize } : {}),
           })
           .eq("id", exactMatch.id);
@@ -301,7 +336,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
             user_id: user.id,
             product_id: productId,
             quantity,
-            selected_color: selectedColor || null,
+            selected_color: finalSelectedColor || null,
             selected_size: selectedSize || null,
           });
 
@@ -313,7 +348,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
               .from("cart_items")
               .update({
                 quantity: first.quantity + quantity,
-                selected_color: selectedColor || null,
+                selected_color: finalSelectedColor || null,
                 selected_size: selectedSize || null,
               })
               .eq("id", first.id);
