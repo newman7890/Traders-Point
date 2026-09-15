@@ -58,6 +58,28 @@ export const CancelOrderDialog = ({
 
     setSubmitting(true);
     try {
+      // 1. Try invoking the process-refund Edge Function (handles Paystack Refund API + cancellation)
+      const { data: fnData, error: fnError } = await supabase.functions.invoke("process-refund", {
+        body: {
+          orderId,
+          reason: finalReason,
+        },
+      });
+
+      if (!fnError && fnData?.success) {
+        toast.success(
+          fnData.message || `Order #${displayShortId} has been cancelled successfully.`
+        );
+        onSuccess?.();
+        onClose();
+        return;
+      }
+
+      if (fnError && fnData?.error) {
+        throw new Error(fnData.error);
+      }
+
+      // 2. Fallback: call cancel_customer_order RPC directly
       const { data, error } = await (supabase.rpc as any)("cancel_customer_order", {
         _order_id: orderId,
         _reason: finalReason,
