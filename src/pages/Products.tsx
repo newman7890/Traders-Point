@@ -1,5 +1,5 @@
 import { SEO } from "@/components/SEO";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Header } from "@/components/Header";
@@ -9,7 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, SlidersHorizontal, X, LayoutGrid, Rows3, Sparkles, ChevronRight } from "lucide-react";
+import { Search, SlidersHorizontal, X, LayoutGrid, Rows3, ChevronRight } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
 import {
   Sheet,
@@ -45,7 +45,6 @@ const Products = () => {
   const [gridCols, setGridCols] = useState<2 | 3>(2);
   const { t } = useLanguage();
   const [searchParams] = useSearchParams();
-  const newArrivalsRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     fetchProducts();
@@ -120,25 +119,8 @@ const Products = () => {
     }
   };
 
-  // Scroll to new arrivals section when navigated with ?section=new-arrivals
-  useEffect(() => {
-    if (!loading && searchParams.get("section") === "new-arrivals" && newArrivalsRef.current) {
-      setTimeout(() => {
-        newArrivalsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-      }, 300);
-    }
-  }, [loading, searchParams]);
-
-  const newArrivals = [...products]
-    .sort((a, b) => new Date(b.created_at || "").getTime() - new Date(a.created_at || "").getTime())
-    .slice(0, 8);
-
   const filteredProducts = products.filter((p) => {
-    // "new" is a virtual category — show only the newest products
-    if (activeCategory === "new") {
-      const isNewArrival = newArrivals.some(n => n.id === p.id);
-      if (!isNewArrival) return false;
-    } else if (activeCategory !== "all") {
+    if (activeCategory !== "all") {
       const pCatLower = (p.category || "").toLowerCase().trim();
       const activeCatLower = activeCategory.toLowerCase().trim();
       const pCatSlug = pCatLower.replace(/[^a-z0-9]+/g, "-");
@@ -321,42 +303,6 @@ const Products = () => {
                 </div>
               ))}
             </div>
-          )}
-
-          {/* New Arrivals Section — only when browsing all products with no search */}
-          {activeCategory === "all" && searchQuery === "" && (
-            <>
-              <motion.div
-                ref={newArrivalsRef}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.05 }}
-                className="mb-12 scroll-mt-20"
-              >
-                <div className="flex items-center gap-2 mb-5">
-                  <Sparkles className="w-5 h-5 text-primary" />
-                  <h2 className="text-lg md:text-xl font-bold tracking-tight">New Arrivals</h2>
-                </div>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  {newArrivals.map((product, index) => (
-                    <motion.div
-                      key={product.id}
-                      initial={{ opacity: 0, y: 15 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: Math.min(index * 0.06, 0.4) }}
-                    >
-                      <ProductCard
-                        {...product}
-                        sale_price={product.sale_price}
-                        sale_ends_at={product.sale_ends_at}
-                      />
-                    </motion.div>
-                  ))}
-                </div>
-              </motion.div>
-
-              <div className="border-t border-border/40 mb-8" />
-            </>
           )}
 
           <motion.div

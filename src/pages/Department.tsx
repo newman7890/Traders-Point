@@ -1,12 +1,12 @@
 import { SEO } from "@/components/SEO";
 import { NewsletterSubscribe } from "@/components/NewsletterSubscribe";
-import { useEffect, useMemo, useState, useRef } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useParams, Link, useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   ArrowRight, Search, Truck, ShieldCheck, RotateCcw, Headphones, 
   Award, Heart, Package, Clock, SlidersHorizontal, X, LayoutGrid, 
-  Rows3, Sparkles, ChevronRight 
+  Rows3, ChevronRight 
 } from "lucide-react";
 import { Header } from "@/components/Header";
 import { BottomNav } from "@/components/BottomNav";
@@ -163,8 +163,6 @@ const Department = () => {
   const [showOnSale, setShowOnSale] = useState(false);
   const [gridCols, setGridCols] = useState<2 | 3>(3);
 
-  const newArrivalsRef = useRef<HTMLDivElement>(null);
-
   useEffect(() => {
     const catParam = searchParams.get("category");
     if (catParam) setActiveCategory(catParam);
@@ -245,12 +243,6 @@ const Department = () => {
 
   const heroImg = useMemo(() => products.find((p) => p.image)?.image, [products]);
   const featured = products.slice(0, 3);
-
-  const newArrivals = useMemo(() => {
-    return [...products]
-      .sort((a, b) => new Date(b.created_at || "").getTime() - new Date(a.created_at || "").getTime())
-      .slice(0, 8);
-  }, [products]);
 
   const filteredProducts = useMemo(() => {
     const cleanText = (str: string) =>
@@ -658,33 +650,6 @@ const Department = () => {
                   </select>
                 </div>
               </div>
-
-              {/* New Arrivals Section — only when browsing all products without search */}
-              {activeCategory === "all" && searchQuery === "" && newArrivals.length > 0 && (
-                <div ref={newArrivalsRef} className="mb-10">
-                  <div className="flex items-center gap-2 mb-4">
-                    <Sparkles className="w-4 h-4 text-primary" />
-                    <h3 className="text-base font-bold tracking-tight">New Arrivals</h3>
-                  </div>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
-                    {newArrivals.slice(0, 4).map((product, index) => (
-                      <motion.div
-                        key={`new-${product.id}`}
-                        initial={{ opacity: 0, y: 15 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: Math.min(index * 0.05, 0.3) }}
-                      >
-                        <ProductCard
-                          {...product}
-                          sale_price={product.sale_price}
-                          sale_ends_at={product.sale_ends_at}
-                        />
-                      </motion.div>
-                    ))}
-                  </div>
-                  <div className="border-t border-border/40 mt-8 mb-6" />
-                </div>
-              )}
 
               {/* Products Grid */}
               <AnimatePresence mode="wait">

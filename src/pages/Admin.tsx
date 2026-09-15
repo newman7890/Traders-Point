@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { LogOut, Package, ShoppingCart, Users, BarChart3, Tag, MessageSquare, Sparkles, LayoutGrid, Truck, Store, PackageCheck, Percent, Building2, Megaphone, Bike, Mail, Clapperboard, Zap } from "lucide-react";
+import { LogOut, Package, ShoppingCart, Users, BarChart3, Tag, MessageSquare, LayoutGrid, Truck, Store, PackageCheck, Percent, Building2, Megaphone, Bike, Mail, Clapperboard, Zap } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Header } from "@/components/Header";
@@ -15,7 +15,6 @@ import { AnalyticsDashboard } from "@/components/admin/AnalyticsDashboard";
 import { SellerPayoutsManagement } from "@/components/admin/SellerPayoutsManagement";
 import { DiscountManagement } from "@/components/admin/DiscountManagement";
 import { TestimonialManagement } from "@/components/admin/TestimonialManagement";
-import { NewArrivalsManagement } from "@/components/admin/NewArrivalsManagement";
 import { CategoryManagement } from "@/components/admin/CategoryManagement";
 import { DeliveryFeeManagement } from "@/components/admin/DeliveryFeeManagement";
 import { SellerApprovalsManagement } from "@/components/admin/SellerApprovalsManagement";
@@ -101,12 +100,6 @@ const Admin = () => {
                 <Package className="w-4 h-4" />
                 <span className="hidden sm:inline">Products</span>
               </TabsTrigger>
-              {isAdmin && (
-                <TabsTrigger value="new-arrivals" className="flex items-center gap-2">
-                  <Sparkles className="w-4 h-4" />
-                  <span className="hidden sm:inline">New Arrivals</span>
-                </TabsTrigger>
-              )}
               <TabsTrigger value="orders" className="flex items-center gap-2">
                 <ShoppingCart className="w-4 h-4" />
                 <span className="hidden sm:inline">Orders</span>
@@ -180,10 +173,6 @@ const Admin = () => {
 
             <TabsContent value="products">
               <ProductManagement />
-            </TabsContent>
-
-            <TabsContent value="new-arrivals">
-              <NewArrivalsManagement />
             </TabsContent>
 
             <TabsContent value="orders">
