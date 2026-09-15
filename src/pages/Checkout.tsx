@@ -86,6 +86,14 @@ const Checkout = () => {
   const [otpValue, setOtpValue] = useState("");
   const [otpSubmitting, setOtpSubmitting] = useState(false);
   const [deliveryFees, setDeliveryFees] = useState<Array<{ region: string; city: string | null; town: string | null; fee: number; is_default: boolean }>>([]);
+  const [pendingReference, setPendingReference] = useState<string | null>(() => {
+    try {
+      return sessionStorage.getItem("tp_pending_ref") || null;
+    } catch {
+      return null;
+    }
+  });
+  const [checkingPending, setCheckingPending] = useState(false);
 
   const { user } = useAuth();
   const [savedAddresses, setSavedAddresses] = useState<Array<{
@@ -108,6 +116,12 @@ const Checkout = () => {
       .then(({ data }) => {
         if (data) setDeliveryFees(data as any);
       });
+
+    // Check if user has an unfinished pending payment in sessionStorage
+    const storedPending = sessionStorage.getItem("tp_pending_ref");
+    if (storedPending) {
+      void checkPendingPayment(storedPending, true);
+    }
   }, []);
 
   useEffect(() => {
@@ -514,6 +528,31 @@ const Checkout = () => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
+  const checkPendingPayment = async (refToCheck: string, isSilent = false) => {
+    if (!refToCheck) return false;
+    if (!isSilent) setCheckingPending(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("verify-payment", {
+        body: { reference: refToCheck },
+      });
+      if (data?.success && data?.orderId) {
+        sessionStorage.removeItem("tp_pending_ref");
+        setPendingReference(null);
+        await clearCart();
+        toast.success("Payment confirmed! Your order has been placed.");
+        navigate(`/order-confirmation/${data.orderId}`);
+        return true;
+      } else if (!isSilent && data?.friendlyError) {
+        toast.info(data.friendlyError);
+      }
+    } catch (err) {
+      console.error("Error verifying pending payment:", err);
+    } finally {
+      if (!isSilent) setCheckingPending(false);
+    }
+    return false;
+  };
+
   const pollMomoStatus = async (reference: string, orderId: string) => {
     const start = Date.now();
     const TIMEOUT_MS = 3 * 60 * 1000;
@@ -703,6 +742,12 @@ const Checkout = () => {
 
       // 1. Try inline popup — pass key, email, and access_code
       const accessCode = data?.accessCode || data?.access_code;
+      const refCode = data?.reference;
+      if (refCode) {
+        sessionStorage.setItem("tp_pending_ref", refCode);
+        setPendingReference(refCode);
+      }
+
       if (accessCode && (window as any).PaystackPop && data?.publicKey) {
         try {
           const popupConfig: Record<string, any> = {
@@ -713,12 +758,25 @@ const Checkout = () => {
             channels: ["card", "mobile_money"],
             access_code: accessCode,
             callback: (response: any) => {
+              sessionStorage.removeItem("tp_pending_ref");
+              setPendingReference(null);
               const paidReference = response?.reference ?? data.reference;
               window.location.href = `${callbackUrl}?reference=${paidReference}`;
             },
             onClose: () => {
               setSubmitting(false);
-              toast.info("Payment cancelled. No order was placed.");
+              toast.info("Waiting for your phone approval. We'll automatically verify and confirm your order!");
+              // Automatically poll verify-payment in the background for 90 seconds
+              if (refCode) {
+                let attempts = 0;
+                const interval = setInterval(async () => {
+                  attempts++;
+                  const success = await checkPendingPayment(refCode, true);
+                  if (success || attempts >= 30) {
+                    clearInterval(interval);
+                  }
+                }, 3500);
+              }
             },
           };
 
@@ -791,6 +849,41 @@ const Checkout = () => {
               animate={{ opacity: 1, y: 0 }}
               className="lg:col-span-3"
             >
+              {pendingReference && (
+                <div className="mb-6 p-4 rounded-xl border border-amber-500/30 bg-amber-500/10 flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-2.5 text-xs text-amber-800 dark:text-amber-200">
+                    <Loader2 className="w-4 h-4 animate-spin text-amber-600 shrink-0" />
+                    <div>
+                      <p className="font-semibold">Payment in progress (Ref: {pendingReference.slice(0, 16)}...)</p>
+                      <p className="text-[11px] text-muted-foreground mt-0.5">If you entered your PIN on your phone, click to confirm your order.</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <Button
+                      type="button"
+                      size="sm"
+                      disabled={checkingPending}
+                      onClick={() => checkPendingPayment(pendingReference)}
+                      className="bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs h-8 px-3"
+                    >
+                      {checkingPending ? <Loader2 className="w-3 h-3 animate-spin" /> : "Verify Now"}
+                    </Button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        sessionStorage.removeItem("tp_pending_ref");
+                        setPendingReference(null);
+                      }}
+                      className="text-xs text-muted-foreground hover:text-foreground p-1 cursor-pointer"
+                      title="Dismiss"
+                      aria-label="Dismiss pending payment alert"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              )}
+
               <form onSubmit={handleSubmit} className="space-y-10">
                 {/* Personal Information */}
                 <section>
